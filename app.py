@@ -80,11 +80,14 @@ def main():
             # Step 3: Define data elements for each purpose
             # Replace the single text area with three text input fields for data elements
             data_element_1 = st.text_input(f"Enter PII question that you want in the form:",
-                                           key=f"{collection_point}_{purpose}_data_element_1")
+                                           key=f"{collection_point}_{purpose}_data_element_1",
+                                           value="Where do you live")
             data_element_2 = st.text_input(f"Enter PII question that you want in the form:",
-                                           key=f"{collection_point}_{purpose}_data_element_2")
+                                           key=f"{collection_point}_{purpose}_data_element_2",
+                                           value="What do you go by?")
             data_element_3 = st.text_input(f"Enter PII question that you want in the form:",
-                                           key=f"{collection_point}_{purpose}_data_element_3")
+                                           key=f"{collection_point}_{purpose}_data_element_3",
+                                           value="What is your email?")
 
             # Collect data elements into a list only if they are not empty
             data_elements = [de for de in [data_element_1, data_element_2, data_element_3] if de]
