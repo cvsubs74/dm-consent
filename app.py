@@ -81,7 +81,7 @@ def main():
             # Replace the single text area with three text input fields for data elements
             data_element_1 = st.text_input(f"Enter PII question that you want in the form:",
                                            key=f"{collection_point}_{purpose}_data_element_1",
-                                           value="Where do you live")
+                                           value="Where do you live?")
             data_element_2 = st.text_input(f"Enter PII question that you want in the form:",
                                            key=f"{collection_point}_{purpose}_data_element_2",
                                            value="What do you go by?")
