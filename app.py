@@ -103,7 +103,7 @@ def main():
                         for data_element in data_elements:
                             pii_type = identify_pii(data_element.strip(), llm)
                             processing_activity["data_elements"].append(
-                                {"element": data_element.strip(), "pii_type": pii_type})
+                                {"question": data_element.strip(), "data element": pii_type})
                         asset["processing_activities"].append(processing_activity)
                     assets.append(asset)
 
