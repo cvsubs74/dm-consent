@@ -2,8 +2,10 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+from graphviz import Digraph
 
 from langchain.llms import AzureOpenAI
+
 
 # Function to load the Language Learning Model from Azure OpenAI
 def load_llm():
@@ -47,6 +49,14 @@ def identify_pii(data_element, llm):
 
 def main():
     st.set_page_config(layout="wide")
+    st.markdown("""
+    <style>
+        html, body, [class*="css"] {
+            font-size: 20px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.title("Platform Integration")
 
     # Introduction about Data Map and its importance
@@ -59,21 +69,20 @@ def main():
     integration_narrative = """
         **Enhancing Platform Integration through Comprehensive Data Mapping**
 
-        As we strive for a seamless and comprehensive integration across our platform, the current landscape reveals a crucial gap – the lack of integration between Data Mapping and key components such as Consent, Cookies, and Data Subject Access Requests (DSAR). This integration is not merely a technical enhancement but a strategic imperative to elevate our platform's functionality, compliance, and user trust.
+        As we strive for a seamless and comprehensive integration across our platform, the integration of key components such as Consent, Cookies, Data Subject Access Requests (DSAR), and Data Discovery with Data Mapping is essential. This strategic alignment is crucial for elevating our platform's functionality, compliance, and user trust.
 
-        **Consent Integration**: Consent forms the bedrock of user trust and regulatory compliance, particularly in light of global privacy regulations. Integrating Consent with Data Mapping ensures that user preferences are accurately reflected across all data processing activities, enabling more granular control and transparency over personal data usage.
+        **Consent Integration**: Ensures that user preferences are accurately reflected across all data processing activities, enabling more granular control and transparency over personal data usage.
 
-        **Cookies Management**: Cookies play a significant role in user experience and data collection practices. By aligning Cookies Management with Data Mapping, we can offer users more precise control over their data, aligning cookie usage with their consent preferences and enhancing privacy protections.
+        **Cookies Management**: By integrating Cookies Management with Data Mapping, users are given precise control over their data, enhancing privacy protections in line with their consent preferences.
 
-        **DSAR Fulfillment**: The ability to efficiently process Data Subject Access Requests is a cornerstone of privacy regulations and user rights. Integrating DSAR with Data Mapping will streamline access, correction, and deletion requests, ensuring that responses are comprehensive, accurate, and timely, thereby reinforcing our commitment to user rights and regulatory compliance.
+        **DSAR Fulfillment**: Streamlines the processing of Data Subject Access Requests, ensuring comprehensive, accurate, and timely responses, thereby reinforcing our commitment to user rights and regulatory compliance.
 
-        Achieving a fully integrated Data Mapping system that encompasses Consent, Cookies, and DSAR will not only fortify our platform's compliance posture but also significantly enhance user trust. This integration ensures that every aspect of data handling is governed by user consent and legal requirements, offering a clear, transparent, and controlled data environment. The path forward involves developing robust interfaces and workflows between these components, ensuring that data mapping accurately reflects the complexities and nuances of modern data processing activities.
+        **Data Discovery**: Plays a critical role in identifying and classifying data across various sources, ensuring that every piece of data is accurately mapped and managed within our platform.
 
-        By bridging these critical components with Data Mapping, we pave the way for a truly integrated platform where data protection and user privacy are paramount, making our platform not just compliant with the current regulations but also ready for the future of data privacy.
-        """
+        Achieving a fully integrated Data Mapping system fortifies our compliance posture and enhances user trust, making our platform not just compliant with current regulations but also ready for the future of data privacy.
+    """
 
     st.markdown(data_map_intro + integration_narrative)
-    llm = load_llm()
 
     # UI for selecting data elements
     data_elements_options = ['Name', 'Phone Number', 'SSN', 'Email', 'Address']
@@ -92,9 +101,37 @@ def main():
     # Process DD
     process_dd(data_elements_options)
 
+    # Process Cookies
+    process_cookies()
+
+
+def process_cookies():
+    st.header("Cookies Data Mapping Integration")
+    website_domain = st.text_input("Enter the website domain to scan for cookies:", key="website_domain")
+
+    if st.button("Scan Cookies"):
+        if website_domain:
+            # Simulate scanning the website for cookies (actual scanning logic depends on your tools and APIs)
+            cookies_found = ["cookie1", "cookie2"]  # Dummy data
+
+            # Check if the website domain already exists as an asset in Data Mapping
+            if website_domain in st.session_state["assets"]:
+                # Append new cookies to the existing list, avoiding duplicates
+                current_cookies = st.session_state["assets"][website_domain]
+                updated_cookies = list(set(current_cookies + cookies_found))
+                st.session_state["assets"][website_domain] = updated_cookies
+            else:
+                # If the website domain doesn't exist, create a new entry
+                st.session_state["assets"][website_domain] = cookies_found
+
+            st.success(f"Cookies scanned and added for {website_domain}.")
+            visualize_data_map()
+        else:
+            st.error("Please enter a website domain.")
+
 
 def process_dd(data_elements_options):
-    st.header("Data Discovery Integration with Data Mapping")
+    st.header("Data Discovery Data Mapping Integration")
 
     data_discovery_integration_narrative = """
         **Optimizing Data Management through Data Discovery Integration**
@@ -132,23 +169,28 @@ def process_dd(data_elements_options):
     # Button to add Data Discovery information to DM
     if st.button("Discover", type="primary"):
         if dd_data_source and dd_selected_pii:
-            # Ensure "Data Discovery Assets" is initialized in session state
+            # Ensure "assets" is initialized in session state
             if "assets" not in st.session_state:
                 st.session_state["assets"] = {}
 
-            # Simulate adding Data Discovery as an asset in DM
-            assets = st.session_state["Assets"]
-            assets[dd_data_source] = dd_selected_pii
-            st.session_state["assets"] = assets
+            # Check if the data source already exists as an asset in Data Mapping
+            if dd_data_source in st.session_state["assets"]:
+                # Append new PII types to the existing list, avoiding duplicates
+                current_pii_types = st.session_state["assets"][dd_data_source]
+                updated_pii_types = list(set(current_pii_types + dd_selected_pii))
+                st.session_state["assets"][dd_data_source] = updated_pii_types
+            else:
+                # If the data source doesn't exist, create a new entry
+                st.session_state["assets"][dd_data_source] = dd_selected_pii
 
-            # Display confirmation and simulate saving to DM (here, just displaying JSON as an example)
+            st.success(f"Data Discovery information for '{dd_data_source}' has been added successfully.")
             visualize_data_map()
         else:
             st.error("Please fill all fields to add Data Discovery information.")
 
 
 def process_dsar(data_elements_options):
-    st.header("Integrating DSAR with Data Mapping")
+    st.header("DSAR Data Mapping Integration")
 
     dsar_integration_narrative = """
         **Streamlining DSAR Integration into Data Mapping**
@@ -167,23 +209,27 @@ def process_dsar(data_elements_options):
         if dsar_purpose and dsar_selected_pii:
             # Ensure "Processing Activities" is initialized in session state
             if "processing_activities" not in st.session_state:
-                st.session_state["processing_activities Activities"] = {}
+                st.session_state["processing_activities"] = {}
 
-            # Storing DSAR as a processing activity linked by its purpose
-            processing_activities = st.session_state["processing_activities"]
-            processing_activities[dsar_purpose] = dsar_selected_pii
+            # Check if the DSAR purpose already exists
+            if dsar_purpose in st.session_state["processing_activities"]:
+                # Append new PII types to the existing list, avoiding duplicates
+                current_pii_types = st.session_state["processing_activities"][dsar_purpose]
+                updated_pii_types = list(set(current_pii_types + dsar_selected_pii))
+                st.session_state["processing_activities"][dsar_purpose] = updated_pii_types
+            else:
+                # If the DSAR purpose doesn't exist, create a new entry
+                st.session_state["processing_activities"][dsar_purpose] = dsar_selected_pii
 
-            # Update session state
-            st.session_state["processing_activities Activities"] = processing_activities
-
-            # Display confirmation and the updated "Processing Activities"
+            # Display confirmation and update the visualization
+            st.success("Your DSAR form has been created/updated successfully.")
             visualize_data_map()
         else:
             st.error("Please specify the DSAR purpose and select at least one data element.")
 
 
 def process_consent(data_elements_options):
-    st.header("Consent Integration")
+    st.header("Consent Data Mapping Integration")
     consent_integration_text = """
         In the realm of data privacy and compliance, the **Consent Integration** process plays a pivotal role, primarily focusing on the seamless interplay between **Purposes**, **Data Elements**, and **Collection Points**. This process is foundational for ensuring that user consents are meticulously captured, managed, and integrated within the Data Mapping infrastructure, thereby adhering to regulatory requirements and safeguarding user privacy.
 
@@ -199,6 +245,7 @@ def process_consent(data_elements_options):
     st.markdown(consent_integration_text)
 
     # UI to get purpose from the user
+    collection_point = st.text_input("Enter the collection point for data collection:", key="collection_point")
     purpose = st.text_input("Enter the purpose for data collection:", key="purpose")
     selected_data_elements = st.multiselect("Select data elements:", data_elements_options, key="data_elements")
 
@@ -209,15 +256,20 @@ def process_consent(data_elements_options):
     # Button to create data elements in Data Mapping (DM) and link to processing activity
     if st.button("Create Purpose", type="primary"):
         if purpose and selected_data_elements:
-            # Store purposes and data elements under "Processing Activities"
-            st.session_state["processing_activities"][purpose] = selected_data_elements
+            # Check if the purpose already exists
+            if purpose in st.session_state["processing_activities"]:
+                # Append new data elements to the existing list, avoiding duplicates
+                current_elements = st.session_state["processing_activities"][purpose]
+                updated_elements = list(set(current_elements + selected_data_elements))
+                st.session_state["processing_activities"][purpose] = updated_elements
+            else:
+                # If the purpose doesn't exist, create a new entry
+                st.session_state["processing_activities"][purpose] = selected_data_elements
+
             # Display the updated "Processing Activities" to the user
             visualize_data_map()
         else:
             st.error("Please specify a purpose and select at least one data element.")
-
-
-from graphviz import Digraph
 
 
 # Inside your main() function, after processing activities and data discovery assets
