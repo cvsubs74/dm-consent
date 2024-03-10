@@ -107,9 +107,12 @@ def main():
 
 def process_cookies():
     st.header("Cookies Data Mapping Integration")
+    st.markdown("""
+        **Cookies Data Mapping Integration:** This integration enhances user privacy and data governance by mapping cookies to assets within the Data Map. It allows for precise control over cookie data, aligning with user consent and regulatory requirements. By scanning website domains for cookies and categorizing them accurately in the Data Map, we ensure transparency and compliance in how cookie data is handled.
+        """)
     website_domain = st.text_input("Enter the website domain to scan for cookies:", key="website_domain")
 
-    if st.button("Scan Cookies"):
+    if st.button("Scan Cookies", type="primary"):
         if website_domain:
             # Simulate scanning the website for cookies (actual scanning logic depends on your tools and APIs)
             cookies_found = ["cookie1", "cookie2"]  # Dummy data
