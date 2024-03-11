@@ -114,18 +114,10 @@ def process_cookies():
 
     if st.button("Scan Cookies", type="primary"):
         if website_domain:
-            # Simulate scanning the website for cookies (actual scanning logic depends on your tools and APIs)
-            cookies_found = ["cookie1", "cookie2"]  # Dummy data
-
             # Check if the website domain already exists as an asset in Data Mapping
-            if website_domain in st.session_state["assets"]:
-                # Append new cookies to the existing list, avoiding duplicates
-                current_cookies = st.session_state["assets"][website_domain]
-                updated_cookies = list(set(current_cookies + cookies_found))
-                st.session_state["assets"][website_domain] = updated_cookies
-            else:
+            if website_domain not in st.session_state["assets"]:
                 # If the website domain doesn't exist, create a new entry
-                st.session_state["assets"][website_domain] = cookies_found
+                st.session_state["assets"][website_domain] = []
 
             st.success(f"Cookies scanned and added for {website_domain}.")
             visualize_data_map()
@@ -204,7 +196,7 @@ def process_dsar(data_elements_options):
     st.markdown(dsar_integration_narrative)
 
     # Assuming each DSAR form's purpose is unique and can be used as an identifier
-    dsar_purpose = st.text_input("Enter the purpose of the DSAR:", key="dsar_purpose")
+    dsar_purpose = st.text_input("DSAR Request Form Name :", key="dsar_purpose")
     dsar_selected_pii = st.multiselect("Select the PIIs you want to capture:", data_elements_options, key="dsar_pii")
 
     # Button to create DSAR in DM
