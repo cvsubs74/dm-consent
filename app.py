@@ -3,7 +3,7 @@ import pandas as pd
 import json
 import os
 from graphviz import Digraph
-
+from random import randint
 from langchain.llms import AzureOpenAI
 
 
@@ -96,7 +96,7 @@ def main():
     process_consent(data_elements_options)
 
     # DSAR Form
-    process_dsar(data_elements_options)
+    process_dsar()
 
     # Process DD
     process_dd(data_elements_options)
@@ -184,43 +184,47 @@ def process_dd(data_elements_options):
             st.error("Please fill all fields to add Data Discovery information.")
 
 
-def process_dsar(data_elements_options):
+def process_dsar():
     st.header("DSAR Data Mapping Integration")
-
-    dsar_integration_narrative = """
+    st.markdown("""
         **Streamlining DSAR Integration into Data Mapping**
         The essence of Data Subject Access Requests (DSAR) transcends the mere act of solicitation for personal data; it marks a critical intersection of user empowerment and systemic transparency. Integrating DSAR with Data Mapping amplifies this synergy, embodying our commitment to operational excellence and regulatory adherence.
         ...
         By navigating this path, we set a new benchmark for data stewardship, one that harmonizes the intricacies of Data Mapping with the fundamental rights of our users. The journey of integrating DSAR with Data Mapping is a vivid reflection of our dedication to privacy, precision, and proactive engagement.
-    """
-    st.markdown(dsar_integration_narrative)
+    """)
 
-    # Assuming each DSAR form's purpose is unique and can be used as an identifier
-    dsar_purpose = st.text_input("DSAR Request Form Name :", key="dsar_purpose")
-    dsar_selected_pii = st.multiselect("Select the PIIs you want to capture:", data_elements_options, key="dsar_pii")
+    # First form for Email and SSN
+    with st.form("dsar_form_1"):
+        email = st.text_input("Email:", key="dsar_email_1")
+        ssn = st.text_input("SSN:", key="dsar_ssn_1")
+        submitted1 = st.form_submit_button("Submit Form 1")
 
-    # Button to create DSAR in DM
-    if st.button("Create DSAR form", type="primary"):
-        if dsar_purpose and dsar_selected_pii:
-            # Ensure "Processing Activities" is initialized in session state
-            if "processing_activities" not in st.session_state:
-                st.session_state["processing_activities"] = {}
+    if submitted1:
+        create_asset(["Email", "SSN"], [email, ssn])
 
-            # Check if the DSAR purpose already exists
-            if dsar_purpose in st.session_state["processing_activities"]:
-                # Append new PII types to the existing list, avoiding duplicates
-                current_pii_types = st.session_state["processing_activities"][dsar_purpose]
-                updated_pii_types = list(set(current_pii_types + dsar_selected_pii))
-                st.session_state["processing_activities"][dsar_purpose] = updated_pii_types
-            else:
-                # If the DSAR purpose doesn't exist, create a new entry
-                st.session_state["processing_activities"][dsar_purpose] = dsar_selected_pii
+    # Second form for Phone and Address
+    with st.form("dsar_form_2"):
+        phone = st.text_input("Phone Number:", key="dsar_phone_2")
+        address = st.text_input("Address:", key="dsar_address_2")
+        submitted2 = st.form_submit_button("Submit Form 2")
 
-            # Display confirmation and update the visualization
-            st.success("Your DSAR form has been created/updated successfully.")
-            visualize_data_map()
-        else:
-            st.error("Please specify the DSAR purpose and select at least one data element.")
+    if submitted2:
+        create_asset(["Phone Number", "Address"], [phone, address])
+
+    visualize_data_map()
+
+
+def create_asset(pii_names, pii_values):
+    # Generate a unique ID for the DSAR request
+    unique_id = f"request_{randint(100, 999)}"
+    # Filter out empty fields
+    piis_collected = dict(filter(lambda pii: pii[1], zip(pii_names, pii_values)))
+
+    if "assets" not in st.session_state:
+        st.session_state["assets"] = {}
+    st.session_state["assets"][unique_id] = list(piis_collected.keys())
+
+    st.success(f"DSAR submitted successfully with ID: {unique_id}.")
 
 
 def process_consent(data_elements_options):
