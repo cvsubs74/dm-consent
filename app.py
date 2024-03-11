@@ -197,7 +197,7 @@ def process_dsar():
     with st.form("dsar_form_1"):
         email = st.text_input("Email:", key="dsar_email_1")
         ssn = st.text_input("SSN:", key="dsar_ssn_1")
-        submitted1 = st.form_submit_button("Submit Form 1")
+        submitted1 = st.form_submit_button("Submit DSAR 1", type="primary")
 
     if submitted1:
         create_asset(["Email", "SSN"], [email, ssn])
@@ -206,7 +206,7 @@ def process_dsar():
     with st.form("dsar_form_2"):
         phone = st.text_input("Phone Number:", key="dsar_phone_2")
         address = st.text_input("Address:", key="dsar_address_2")
-        submitted2 = st.form_submit_button("Submit Form 2")
+        submitted2 = st.form_submit_button("Submit DSAR 2", type="primary")
 
     if submitted2:
         create_asset(["Phone Number", "Address"], [phone, address])
