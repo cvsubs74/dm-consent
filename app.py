@@ -112,55 +112,95 @@ def main():
     # Process Cookies
     process_cookies()
 
+    # Process comments
     process_comments()
 
 
 def process_comments():
-    # Initialize and connect to the database using the Comments class
     comments = Comments()
     comments.connect()
+    llm = load_llm()
 
     st.subheader("Have a suggestion?")
     # Detailed question displayed to the user
     st.markdown("""
-        We invite you to examine the data map closely and share any suggestions for enhancements or additional elements that should be included. This may encompass new objects or attributes you believe are crucial. Furthermore, if you have specific ideas on the structuring or representation of data within the Data Map, we'd appreciate your detailed insights. Often, developing a comprehensive abstraction within the Data Map necessitates considering how various data aggregates might be represented as attributes. Should you propose a new integration, kindly outline its specifics along with the potential use cases it aims to support. Remember, a key objective of establishing a centralized data map is to facilitate robust regulatory intelligence.
-        """, unsafe_allow_html=True)
+        We invite you to examine the data map closely and share any suggestions for enhancements or additional elements ...
+    """, unsafe_allow_html=True)
 
-    # User selects a category for their comment
-    comment_category = st.selectbox(
-        "Select a Category:",
-        ["Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
-        key="comment_category"
-    )
+    suggestion_type = st.selectbox("Select a Category:", ["Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
+                                   key="suggestion_type")
+    user_suggestion = st.text_area("Leave your suggestion here:")
 
-    user_comment = st.text_area("Leave your suggestion here:")
+    if st.button("Submit", type="primary") and user_suggestion:
+        # Get all comments for the category to summarize
+        all_comments_for_category = comments.get_user_comments_by_category(suggestion_type)
+        all_comments_text = " ".join([comment for comment, _, _ in all_comments_for_category])
+        updated_comments_text = all_comments_text + " " + user_suggestion  # Include the new comment for summarization
 
-    if st.button("Submit", type="primary"):
-        if user_comment:  # Make sure the user has entered a comment
-            comments.add_user_comment(user_comment,
-                                      comment_category)  # Assuming add_user_comment now also accepts category
-            st.success("Thank you for your suggestions!")
-        else:
-            st.error("Please enter a suggestion.")
+        # Perform summarization with the updated comments text
+        summary_prompt = f"Summarize the following comments: {updated_comments_text}"
+        summary_response = llm(summary_prompt)
+        summary_text = summary_response.strip() if summary_response else "No summary available."
 
-    # Filter criteria for recent comments
-    st.subheader("Suggestions")
-    selected_category = st.selectbox(
-        "Select a category to filter comments:",
-        ["All", "Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
-        key="filter_category"
-    )
-    all_comments = comments.get_user_comments_by_category(selected_category)
+        # Update the category summary in the database
+        comments.update_category_summary(suggestion_type, summary_text)
 
-    for comment, category, created_at in all_comments:
+        # Add the new user comment along with its category
+        comments.add_user_comment(user_suggestion, suggestion_type)
+        st.success("Thank you for your suggestion!")
+
+    selected_category = st.selectbox("View Summary and Comments By Category:",
+                                     ["All", "Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
+                                     key="view_category")
+
+    # Fetch and display the summary from the database without LLM invocation
+    category_summary = ""
+    if selected_category != "All":
+        category_summary = comments.get_category_summary(selected_category)
+        if not category_summary:
+            # Fetch all comments for the category to summarize
+            all_suggestions = comments.get_user_comments_by_category(selected_category)
+            all_comments_text = " ".join([comment for comment, _, _ in all_suggestions])
+            if all_comments_text:
+                llm = load_llm()
+                summary_prompt = f"Please summarize the following comments related to {selected_category}: {all_comments_text}"
+                summary_response = llm(summary_prompt)
+                summary_text = summary_response.strip() if summary_response.strip() else "No summary available."
+
+                # Update the table with the new summary
+                comments.update_category_summary(selected_category, summary_text)
+                category_summary = summary_text
+            else:
+                category_summary = "No comments provided for this category."
         st.markdown(
             f"""
-            <div style="margin: 10px 0; padding: 10px; border-left: 5px solid #4CAF50; background-color: #f0f0f0;">
-                <h4>{category} Comment</h4>
-                <p>{comment}</p>
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin-bottom: 0;">Summary</h4>
+                <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px;">
+                    <pre style="white-space: pre-wrap;">{category_summary}</pre>
+                </div>
+            </div>
+            <hr style="margin: 20px 0;">
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown("**Summary is only available for individual categories.**")
+
+    # Display all comments for the selected category
+    all_suggestions = comments.get_user_comments_by_category(selected_category)
+    # Display all comments for the selected category
+    for suggestion, suggestion_type, created_at in all_suggestions:
+        st.markdown(
+            f"""
+            <div style="margin: 10px 0; padding: 10px; background-color: #f9f9f9; border-left: 5px solid #4CAF50;">
+                <p style="margin: 0;"><span style="font-size: small;">Category: {suggestion_type}</span></p>
+                <p style="white-space: pre-wrap; word-wrap: break-word;">{suggestion}</p>
                 <sub>Posted on {created_at}</sub>
             </div>
-            """, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True
+        )
 
     comments.close()
 

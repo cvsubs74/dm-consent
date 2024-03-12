@@ -35,7 +35,7 @@ class Comments:
         cursor.execute(
             """
             INSERT INTO user_comments (comment_text, type)
-            VALUES (%s, %s)
+            VALUES (%s, %s, %s)
             """,
             (comment, comment_type)
         )
@@ -53,7 +53,7 @@ class Comments:
             cursor.execute(query, (limit,))
         else:
             query = """
-                SELECT comment_text, category, created_at FROM user_comments
+                SELECT comment_text, type, created_at FROM user_comments
                 WHERE type = %s
                 ORDER BY created_at DESC
                 LIMIT %s
@@ -62,6 +62,32 @@ class Comments:
         comments = cursor.fetchall()
         cursor.close()
         return comments
+
+    def update_category_summary(self, category: str, summary: str):
+        cursor = self.connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO category_summaries (category, summary)
+            VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE summary = VALUES(summary)
+            """,
+            (category, summary)
+        )
+        self.connection.commit()
+        cursor.close()
+
+    def get_category_summary(self, category: str):
+        cursor = self.connection.cursor()
+        cursor.execute(
+            """
+            SELECT summary FROM category_summaries
+            WHERE category = %s
+            """,
+            (category,)
+        )
+        summary = cursor.fetchone()
+        cursor.close()
+        return summary[0] if summary else None
 
     def close(self):
         if self.connection is not None:
