@@ -120,19 +120,48 @@ def process_comments():
     comments = Comments()
     comments.connect()
 
-    # Section for user to submit a comment
-    st.subheader("User Comments")
-    user_comment = st.text_area("Leave your comment here:")
+    st.subheader("Have a suggestion?")
+    # Detailed question displayed to the user
+    st.markdown("""
+        We invite you to examine the data map closely and share any suggestions for enhancements or additional elements that should be included. This may encompass new objects or attributes you believe are crucial. Furthermore, if you have specific ideas on the structuring or representation of data within the Data Map, we'd appreciate your detailed insights. Often, developing a comprehensive abstraction within the Data Map necessitates considering how various data aggregates might be represented as attributes. Should you propose a new integration, kindly outline its specifics along with the potential use cases it aims to support. Remember, a key objective of establishing a centralized data map is to facilitate robust regulatory intelligence.
+        """, unsafe_allow_html=True)
+
+    # User selects a category for their comment
+    comment_category = st.selectbox(
+        "Select a Category:",
+        ["Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
+        key="comment_category"
+    )
+
+    user_comment = st.text_area("Leave your suggestion here:")
+
     if st.button("Submit", type="primary"):
-        comments.add_user_comment(user_comment)
-        st.success("Thank you for your feedback!")
+        if user_comment:  # Make sure the user has entered a comment
+            comments.add_user_comment(user_comment,
+                                      comment_category)  # Assuming add_user_comment now also accepts category
+            st.success("Thank you for your suggestions!")
+        else:
+            st.error("Please enter a suggestion.")
 
-    # Display the most recent comments
-    st.subheader("Recent Comments")
-    for comment, created_at in comments.get_user_comments():
-        st.markdown(f"- {comment} (posted on {created_at})")
+    # Filter criteria for recent comments
+    st.subheader("Suggestions")
+    selected_category = st.selectbox(
+        "Select a category to filter comments:",
+        ["All", "Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
+        key="filter_category"
+    )
+    all_comments = comments.get_user_comments_by_category(selected_category)
 
-    # Ensure the database connection is closed when the app is rerun or exited
+    for comment, category, created_at in all_comments:
+        st.markdown(
+            f"""
+            <div style="margin: 10px 0; padding: 10px; border-left: 5px solid #4CAF50; background-color: #f0f0f0;">
+                <h4>{category} Comment</h4>
+                <p>{comment}</p>
+                <sub>Posted on {created_at}</sub>
+            </div>
+            """, unsafe_allow_html=True)
+
     comments.close()
 
 
