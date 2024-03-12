@@ -193,38 +193,29 @@ def process_dsar():
         By navigating this path, we set a new benchmark for data stewardship, one that harmonizes the intricacies of Data Mapping with the fundamental rights of our users. The journey of integrating DSAR with Data Mapping is a vivid reflection of our dedication to privacy, precision, and proactive engagement.
     """)
 
-    # First form for Email and SSN
-    with st.form("dsar_form_1"):
-        email = st.text_input("Email:", key="dsar_email_1")
-        ssn = st.text_input("SSN:", key="dsar_ssn_1")
-        submitted1 = st.form_submit_button("Submit DSAR 1", type="primary")
+    # User-defined DSAR Request Type
+    dsar_request_type = st.text_input("Enter DSAR Request Type:", key="dsar_request_type")
+    data_elements_options = ["Email", "SSN", "Phone Number", "Address"]
 
-    if submitted1:
-        create_asset(["Email", "SSN"], [email, ssn])
+    selected_data_elements = st.multiselect("Select Data Elements:", data_elements_options,
+                                            key="selected_data_elements")
 
-    # Second form for Phone and Address
-    with st.form("dsar_form_2"):
-        phone = st.text_input("Phone Number:", key="dsar_phone_2")
-        address = st.text_input("Address:", key="dsar_address_2")
-        submitted2 = st.form_submit_button("Submit DSAR 2", type="primary")
-
-    if submitted2:
-        create_asset(["Phone Number", "Address"], [phone, address])
-
-    visualize_data_map()
+    if st.button("Submit DSAR", type="primary"):
+        if dsar_request_type and selected_data_elements:
+            create_processing_activity(dsar_request_type, selected_data_elements)
+            visualize_data_map()
+        else:
+            st.error("Please enter a DSAR request type and select at least one data element.")
 
 
-def create_asset(pii_names, pii_values):
-    # Generate a unique ID for the DSAR request
-    unique_id = f"request_{randint(100, 999)}"
-    # Filter out empty fields
-    piis_collected = dict(filter(lambda pii: pii[1], zip(pii_names, pii_values)))
+def create_processing_activity(dsar_request_type, selected_data_elements):
+    if "processing_activities" not in st.session_state:
+        st.session_state["processing_activities"] = {}
 
-    if "assets" not in st.session_state:
-        st.session_state["assets"] = {}
-    st.session_state["assets"][unique_id] = list(piis_collected.keys())
+    # Directly use the DSAR request type as the key for the processing activity
+    st.session_state["processing_activities"][dsar_request_type] = selected_data_elements
 
-    st.success(f"DSAR submitted successfully with ID: {unique_id}.")
+    st.success(f"DSAR request '{dsar_request_type}' has been created successfully.")
 
 
 def process_consent(data_elements_options):
