@@ -1,10 +1,8 @@
 import streamlit as st
-import pandas as pd
-import json
 import os
 from graphviz import Digraph
-from random import randint
 from langchain.llms import AzureOpenAI
+from comments import Comments
 
 
 # Function to load the Language Learning Model from Azure OpenAI
@@ -18,6 +16,15 @@ def load_llm():
     return AzureOpenAI(temperature=0.9,
                        deployment_name=os.environ["DEPLOYMENT_NAME"],
                        model_name=os.environ["MODEL_NAME"])
+
+
+def set_env():
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = st.secrets["GOOGLE_APPLICATION_CREDENTIALS"]
+    os.environ["SQL_SERVER"] = st.secrets["SQL_SERVER"]
+    os.environ["SQL_DATABASE"] = st.secrets["SQL_DATABASE"]
+    os.environ["SQL_USERNAME"] = st.secrets["SQL_USERNAME"]
+    os.environ["SQL_PASSWORD"] = st.secrets["SQL_PASSWORD"]
+    os.environ["MYSQL_CONNECTION_STRING"] = st.secrets["MYSQL_CONNECTION_STRING"]
 
 
 # Function to identify PII types using AzureOpenAI
@@ -58,6 +65,7 @@ def main():
     """, unsafe_allow_html=True)
 
     st.title("Platform Integration")
+    set_env()
 
     # Introduction about Data Map and its importance
     data_map_intro = """
@@ -103,6 +111,29 @@ def main():
 
     # Process Cookies
     process_cookies()
+
+    process_comments()
+
+
+def process_comments():
+    # Initialize and connect to the database using the Comments class
+    comments = Comments()
+    comments.connect()
+
+    # Section for user to submit a comment
+    st.subheader("User Comments")
+    user_comment = st.text_area("Leave your comment here:")
+    if st.button("Submit", type="primary"):
+        comments.add_user_comment(user_comment)
+        st.success("Thank you for your feedback!")
+
+    # Display the most recent comments
+    st.subheader("Recent Comments")
+    for comment, created_at in comments.get_user_comments():
+        st.markdown(f"- {comment} (posted on {created_at})")
+
+    # Ensure the database connection is closed when the app is rerun or exited
+    comments.close()
 
 
 def process_cookies():
