@@ -132,17 +132,25 @@ def process_comments():
     user_suggestion = st.text_area("Leave your suggestion here:")
 
     if st.button("Submit", type="primary") and user_suggestion:
-        # Get all comments for the category to summarize
+        # Get all comments for the category to summarize, already in descending order by time
         all_comments_for_category = comments.get_user_comments_by_category(suggestion_type)
-        all_comments_text = " ".join([comment for comment, _, _ in all_comments_for_category])
-        updated_comments_text = all_comments_text + " " + user_suggestion  # Include the new comment for summarization
+        # Since comments are in descending order, reverse them to start from the earliest
+        all_comments_text = " # ".join([comment for comment, _, _ in reversed(all_comments_for_category)])
+        # Append the new user suggestion to the end as it's the most recent
+        updated_comments_text = all_comments_text + " # " + user_suggestion
 
-        # Perform summarization with the updated comments text
-        summary_prompt = f"Summarize the following comments: {updated_comments_text}"
+        # Perform summarization with the updated comments text using a dynamic category-based prompt
+        summary_prompt = (
+            f"Given a discussion thread on the topic of '{suggestion_type}' in data management, summarize the key points focusing on the main themes, "
+            "the relationship between key concepts, and how these are integrated into the overarching topic. Highlight any consensus or differing viewpoints on how to effectively manage or address these concepts. "
+            "Include considerations for additional attributes that should be integrated into the topic discussion, such as related integrations, volumes, and any specific methodologies or practices mentioned. "
+            "Provide a concise overview of the proposed solutions or structures mentioned and any suggestions for process improvements. Ensure the summary captures the evolution of the discussion, "
+            "from initial queries to the final consensus on their importance and integration into the topic. Comments are separated by ' # ' and ordered from earliest to latest, "
+            f"including the most recent user suggestion at the end: {updated_comments_text}")
         summary_response = llm(summary_prompt)
         summary_text = summary_response.strip() if summary_response else "No summary available."
 
-        # Update the category summary in the database
+        # Update the category summary in the database with the new summary
         comments.update_category_summary(suggestion_type, summary_text)
 
         # Add the new user comment along with its category
@@ -195,7 +203,7 @@ def process_comments():
             f"""
             <div style="margin: 10px 0; padding: 10px; background-color: #f9f9f9; border-left: 5px solid #4CAF50;">
                 <p style="margin: 0;"><span style="font-size: small;">Category: {suggestion_type}</span></p>
-                <p style="white-space: pre-wrap; word-wrap: break-word;">{suggestion}</p>
+                <pre style="white-space: pre-wrap; word-wrap: break-word; margin: 0;">{suggestion}</pre>
                 <sub>Posted on {created_at}</sub>
             </div>
             """,

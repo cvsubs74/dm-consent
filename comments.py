@@ -35,30 +35,28 @@ class Comments:
         cursor.execute(
             """
             INSERT INTO user_comments (comment_text, type)
-            VALUES (%s, %s, %s)
+            VALUES (%s, %s)
             """,
             (comment, comment_type)
         )
         self.connection.commit()
         cursor.close()
 
-    def get_user_comments_by_category(self, category: str, limit=10):
+    def get_user_comments_by_category(self, category: str):
         cursor = self.connection.cursor()
         if category == "All":
             query = """
                 SELECT comment_text, type, created_at FROM user_comments
                 ORDER BY created_at DESC
-                LIMIT %s
                 """
-            cursor.execute(query, (limit,))
+            cursor.execute(query)
         else:
             query = """
                 SELECT comment_text, type, created_at FROM user_comments
                 WHERE type = %s
                 ORDER BY created_at DESC
-                LIMIT %s
                 """
-            cursor.execute(query, (category, limit))
+            cursor.execute(query, (category))
         comments = cursor.fetchall()
         cursor.close()
         return comments
