@@ -157,26 +157,22 @@ def process_comments():
         comments.add_user_comment(user_suggestion, suggestion_type)
         st.success("Thank you for your suggestion!")
 
-    selected_category = st.selectbox("View Summary and Comments By Category:",
-                                     ["All", "Consent", "Cookies", "Data Discovery", "DSAR", "Other"],
-                                     key="view_category")
-
     # Fetch and display the summary from the database without LLM invocation
     category_summary = ""
-    if selected_category != "All":
-        category_summary = comments.get_category_summary(selected_category)
+    if suggestion_type != "All":
+        category_summary = comments.get_category_summary(suggestion_type)
         if not category_summary:
             # Fetch all comments for the category to summarize
-            all_suggestions = comments.get_user_comments_by_category(selected_category)
+            all_suggestions = comments.get_user_comments_by_category(suggestion_type)
             all_comments_text = " ".join([comment for comment, _, _ in all_suggestions])
             if all_comments_text:
                 llm = load_llm()
-                summary_prompt = f"Please summarize the following comments related to {selected_category}: {all_comments_text}"
+                summary_prompt = f"Please summarize the following comments related to {suggestion_type}: {all_comments_text}"
                 summary_response = llm(summary_prompt)
                 summary_text = summary_response.strip() if summary_response.strip() else "No summary available."
 
                 # Update the table with the new summary
-                comments.update_category_summary(selected_category, summary_text)
+                comments.update_category_summary(suggestion_type, summary_text)
                 category_summary = summary_text
             else:
                 category_summary = "No comments provided for this category."
@@ -196,7 +192,7 @@ def process_comments():
         st.markdown("**Summary is only available for individual categories.**")
 
     # Display all comments for the selected category
-    all_suggestions = comments.get_user_comments_by_category(selected_category)
+    all_suggestions = comments.get_user_comments_by_category(suggestion_type)
     # Display all comments for the selected category
     for suggestion, suggestion_type, created_at in all_suggestions:
         st.markdown(
