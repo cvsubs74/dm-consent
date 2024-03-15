@@ -80,6 +80,7 @@ class Comments:
             """
             SELECT summary FROM category_summaries
             WHERE category = %s
+            ORDER BY id DESC
             """,
             (category,)
         )
