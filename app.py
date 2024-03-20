@@ -1,15 +1,17 @@
 import streamlit as st
 import os
 from graphviz import Digraph
-from langchain.llms import AzureOpenAI
+from langchain_openai import AzureOpenAI
+import openai
+
 from comments import Comments
 
 
 # Function to load the Language Learning Model from Azure OpenAI
 def load_llm():
     os.environ["OPENAI_API_TYPE"] = st.secrets["OPENAI_API_TYPE"]
-    os.environ["OPENAI_API_BASE"] = st.secrets["OPENAI_API_BASE"]
-    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+    os.environ["AZURE_OPENAI_ENDPOINT"] = st.secrets["AZURE_OPENAI_ENDPOINT"]
+    os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     os.environ["DEPLOYMENT_NAME"] = st.secrets["DEPLOYMENT_NAME"]
     os.environ["OPENAI_API_VERSION"] = st.secrets["OPENAI_API_VERSION"]
     os.environ["MODEL_NAME"] = st.secrets["MODEL_NAME"]
@@ -147,11 +149,17 @@ def process_comments():
             "Provide a concise overview of the proposed solutions or structures mentioned and any suggestions for process improvements. Ensure the summary captures the evolution of the discussion, "
             "from initial queries to the final consensus on their importance and integration into the topic. Comments are separated by ' # ' and ordered from earliest to latest, "
             f"including the most recent user suggestion at the end: {updated_comments_text}")
-        summary_response = llm(summary_prompt)
+        try:
+            summary_response = llm(summary_prompt).strip()
+        except Exception as e:
+            summary_response = None
+            print(f"Failed to generate summary: {e}")
+
         summary_text = summary_response.strip() if summary_response else "No summary available."
 
         # Update the category summary in the database with the new summary
-        comments.update_category_summary(suggestion_type, summary_text)
+        if summary_text != "No summary available.":
+            comments.update_category_summary(suggestion_type, summary_text)
 
         # Add the new user comment along with its category
         comments.add_user_comment(user_suggestion, suggestion_type)
@@ -166,9 +174,21 @@ def process_comments():
             all_suggestions = comments.get_user_comments_by_category(suggestion_type)
             all_comments_text = " ".join([comment for comment, _, _ in all_suggestions])
             if all_comments_text:
-                llm = load_llm()
-                summary_prompt = f"Please summarize the following comments related to {suggestion_type}: {all_comments_text}"
-                summary_response = llm(summary_prompt)
+                # Perform summarization with the updated comments text using a dynamic category-based prompt
+                summary_prompt = (
+                    f"Given a discussion thread on the topic of '{suggestion_type}' in data management, summarize the key points focusing on the main themes, "
+                    "the relationship between key concepts, and how these are integrated into the overarching topic. Highlight any consensus or differing viewpoints on how to effectively manage or address these concepts. "
+                    "Include considerations for additional attributes that should be integrated into the topic discussion, such as related integrations, volumes, and any specific methodologies or practices mentioned. "
+                    "Provide a concise overview of the proposed solutions or structures mentioned and any suggestions for process improvements. Ensure the summary captures the evolution of the discussion, "
+                    "from initial queries to the final consensus on their importance and integration into the topic. Comments are separated by ' # ' and ordered from earliest to latest, "
+                    f"including the most recent user suggestion at the end: {all_comments_text}")
+
+                try:
+                    summary_response = llm(summary_prompt).strip()
+                except Exception as e:
+                    summary_response = None
+                    print(f"Failed to generate summary: {e}")
+
                 summary_text = summary_response.strip() if summary_response.strip() else "No summary available."
 
                 # Update the table with the new summary
