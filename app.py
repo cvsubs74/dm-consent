@@ -72,6 +72,9 @@ def main():
     # Process Cookies
     process_cookies()
 
+    # Process models
+    process_model_creation()
+
     # Process comments
     process_comments()
 
@@ -270,7 +273,60 @@ def process_consent(data_elements_options):
             st.error("Please specify a purpose and select at least one data element.")
 
 
-# Inside your main() function, after processing activities and data discovery assets
+def process_model_creation():
+    st.header("Model to DM Integration")
+    st.markdown("""
+        **Model to Data Management Integration:**
+        This section allows for the creation of a Model object that abstracts an AI model. The platform captures information about the model used in the Model object. Here, you can specify a name, description, and purpose for the model, and link it to a Processing Activity.
+    """)
+
+    # Predefined processing activities
+    predefined_activities = ["Loan Approval Process", "Account Validation Process", "Credit Check Process"]
+    # Adding existing activities from session state if available
+    existing_activities = list(st.session_state.get("processing_activities", {}).keys())
+    all_activities = predefined_activities + existing_activities
+    unique_activities = list(set(all_activities))  # Ensure activities are unique
+
+    model_purpose_options = ["Select a processing activity...", "Add new processing activity"] + unique_activities
+    model_purpose = st.selectbox("Model Purpose:", model_purpose_options, key="model_purpose")
+
+    # Handling the case where "Add new processing activity" is selected
+    if model_purpose == "Add new processing activity":
+        new_activity_name = st.text_input("Enter new processing activity name:", key="new_activity_name")
+
+        # Button to create a new processing activity
+        if st.button("Create New Processing Activity", key="create_new_pa"):
+            if new_activity_name and new_activity_name not in existing_activities:
+                # Ensure "processing_activities" is initialized in session state
+                if "processing_activities" not in st.session_state:
+                    st.session_state["processing_activities"] = {}
+                # Add the new processing activity
+                st.session_state["processing_activities"][new_activity_name] = []
+                st.success(f"Processing activity '{new_activity_name}' has been created successfully.")
+                # Resetting model purpose to newly created activity for smoother UX
+                st.session_state["model_purpose"] = new_activity_name
+            else:
+                st.error("Please enter a unique name for the new processing activity.")
+
+    # Continuing with model creation UI if a valid processing activity is selected
+    model_name = st.text_input("Model Name:", value="Loan Approval", key="model_name")
+    model_description = st.text_area("Model Description:", key="model_description")
+
+    if model_purpose not in ["Select a processing activity...", "Add new processing activity"] and st.button("Create Model", type="primary"):
+        if model_name and model_description:
+            # Ensure "models" is initialized in session state
+            if "models" not in st.session_state:
+                st.session_state["models"] = {}
+
+            # Create and add the new model object
+            st.session_state["models"][model_name] = {"description": model_description, "purpose": model_purpose}
+
+            st.success(f"Model '{model_name}' has been created successfully and linked to the processing activity '{model_purpose}'.")
+            visualize_data_map()
+        else:
+            st.error("Please fill in all fields to create a model.")
+
+
 def visualize_data_map():
     dot = Digraph(comment='Data Map Visualization')
 
@@ -285,25 +341,40 @@ def visualize_data_map():
 
     # Assuming session_state['processing_activities'] and session_state['assets'] have been populated
     # Iterate over processing activities
+    for activity, elements in st.session_state.get("processing_activities", {}).items():
+        activity_node = activity
+        dot.node(activity, activity)
+        dot.edge('B', activity_node)  # Link activity to Processing Activities node
 
-    for activity, elements in st.session_state["processing_activities"].items():
-        activity_node = f'PA_{activity.replace(" ", "_")}'
-        dot.node(activity_node, activity)
-        dot.edge('B', activity_node)
+        # Iterate over elements (if any) within each processing activity
         for element in elements:
             element_node = f'{activity_node}_{element.replace(" ", "_")}'
             dot.node(element_node, element)
             dot.edge(activity_node, element_node)
 
     # Iterate over data discovery assets
-    for asset, elements in st.session_state["assets"].items():
+    for asset, elements in st.session_state.get("assets", {}).items():
         asset_node = f'DD_{asset.replace(" ", "_")}'
         dot.node(asset_node, asset)
-        dot.edge('C', asset_node)
+        dot.edge('C', asset_node)  # Link assets to Assets node
+
+        # Iterate over elements within each asset
         for element in elements:
             element_node = f'{asset_node}_{element.replace(" ", "_")}'
             dot.node(element_node, element)
             dot.edge(asset_node, element_node)
+
+    # Check if there are any models to display
+    if "models" in st.session_state and st.session_state["models"]:
+        for model_name, model_info in st.session_state["models"].items():
+            model_node = f'Model_{model_name.replace(" ", "_")}'
+            # Create model nodes with description as tooltip
+            dot.node(model_node, label=model_name, _attributes={"tooltip": model_info["description"]})
+
+            # Link model directly to its processing activity, not under a separate "Models" node
+            pa_node = model_info["purpose"]
+            dot.edge(pa_node, model_node, label="Uses Model")  # Label the edge for clarity
+            dot.edge("B", pa_node)
 
     # Display the graph
     st.graphviz_chart(dot.source)
