@@ -274,10 +274,10 @@ def process_consent(data_elements_options):
 
 
 def process_model_creation():
-    st.header("Model to DM Integration")
+    st.header("AI Governance")
     st.markdown("""
-        **Model to Data Management Integration:**
-        This section allows for the creation of a Model object that abstracts an AI model. The platform captures information about the model used in the Model object. Here, you can specify a name, description, and purpose for the model, and link it to a Processing Activity.
+        **AI Governance:**
+        The OneTrust Platform introduces a comprehensive AI Governance solution designed to empower customers in the oversight of their AI initiatives. Central to this governance is the Model object, a construct that encapsulates the essence of an AI model, ensuring transparency and accountability. Through the Model object, users have the capability to define critical attributes such as the model's name, its descriptive overview, and its intended purpose. This facilitates a meticulous recording of the AI model's parameters, including the datasets it relies upon, which may carry inherent biases. By capturing this information, the platform aids in identifying and mitigating potential biases, ensuring AI implementations are both ethical and effective. Each Model object is integrated within the platform's data map where the model object is linked to its purpose, captured as a Processing Activity, providing a clear and structured representation of how AI models interact with and impact data governance landscapes.
     """)
 
     # Predefined processing activities
