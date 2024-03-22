@@ -287,6 +287,8 @@ def process_model_creation():
     all_activities = predefined_activities + existing_activities
     unique_activities = list(set(all_activities))  # Ensure activities are unique
 
+    model_name = st.text_input("Model Name:", value="Loan Approval", key="model_name")
+    model_description = st.text_area("Model Description:", key="model_description")
     model_purpose_options = ["Select a processing activity...", "Add new processing activity"] + unique_activities
     model_purpose = st.selectbox("Model Purpose:", model_purpose_options, key="model_purpose")
 
@@ -307,10 +309,6 @@ def process_model_creation():
                 st.session_state["model_purpose"] = new_activity_name
             else:
                 st.error("Please enter a unique name for the new processing activity.")
-
-    # Continuing with model creation UI if a valid processing activity is selected
-    model_name = st.text_input("Model Name:", value="Loan Approval", key="model_name")
-    model_description = st.text_area("Model Description:", key="model_description")
 
     if model_purpose not in ["Select a processing activity...", "Add new processing activity"] and st.button("Create Model", type="primary"):
         if model_name and model_description:
