@@ -1,5 +1,5 @@
 streamlit
-langchain==0.1.13
+langchain
 openai
 graphviz
 cloud-sql-python-connector
