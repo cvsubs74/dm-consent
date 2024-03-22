@@ -1,6 +1,4 @@
 streamlit
-langchain
-openai
 graphviz
 cloud-sql-python-connector
 PyMySQL

@@ -1,23 +1,8 @@
 import streamlit as st
 import os
 from graphviz import Digraph
-from langchain_openai import AzureOpenAI
-import openai
 
 from comments import Comments
-
-
-# Function to load the Language Learning Model from Azure OpenAI
-def load_llm():
-    os.environ["OPENAI_API_TYPE"] = st.secrets["OPENAI_API_TYPE"]
-    os.environ["AZURE_OPENAI_ENDPOINT"] = st.secrets["AZURE_OPENAI_ENDPOINT"]
-    os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
-    os.environ["DEPLOYMENT_NAME"] = st.secrets["DEPLOYMENT_NAME"]
-    os.environ["OPENAI_API_VERSION"] = st.secrets["OPENAI_API_VERSION"]
-    os.environ["MODEL_NAME"] = st.secrets["MODEL_NAME"]
-    return AzureOpenAI(temperature=0.9,
-                       deployment_name=os.environ["DEPLOYMENT_NAME"],
-                       model_name=os.environ["MODEL_NAME"])
 
 
 def set_env():
@@ -27,33 +12,6 @@ def set_env():
     os.environ["SQL_USERNAME"] = st.secrets["SQL_USERNAME"]
     os.environ["SQL_PASSWORD"] = st.secrets["SQL_PASSWORD"]
     os.environ["MYSQL_CONNECTION_STRING"] = st.secrets["MYSQL_CONNECTION_STRING"]
-
-
-# Function to identify PII types using AzureOpenAI
-def identify_pii(data_element, llm):
-    """
-    Identifies the PII type of a given data element using AzureOpenAI.
-    """
-    prompt = f"What type of Personally Identifiable Information (PII) does the following data element represent: '{data_element}'? Possible PIIs are name, email, social security number, address, driver license number."
-    try:
-        response = llm(prompt)
-        pii_response = response.strip().lower()
-
-        pii_categories = {
-            "name": "Name",
-            "email": "Email",
-            "social security number": "Social Security Number",
-            "address": "Address",
-            "driver license number": "Driver License Number"
-        }
-
-        for key, value in pii_categories.items():
-            if key in pii_response:
-                return value
-        return "Other"
-    except Exception as e:
-        print(f"An error occurred while identifying PII: {str(e)}")
-        return "Error"
 
 
 def main():
@@ -121,7 +79,6 @@ def main():
 def process_comments():
     comments = Comments()
     comments.connect()
-    llm = load_llm()
 
     st.subheader("Have a suggestion?")
     # Detailed question displayed to the user
@@ -134,82 +91,9 @@ def process_comments():
     user_suggestion = st.text_area("Leave your suggestion here:")
 
     if st.button("Submit", type="primary") and user_suggestion:
-        # Get all comments for the category to summarize, already in descending order by time
-        all_comments_for_category = comments.get_user_comments_by_category(suggestion_type)
-        # Since comments are in descending order, reverse them to start from the earliest
-        all_comments_text = " # ".join([comment for comment, _, _ in reversed(all_comments_for_category)])
-        # Append the new user suggestion to the end as it's the most recent
-        updated_comments_text = all_comments_text + " # " + user_suggestion
-
-        # Perform summarization with the updated comments text using a dynamic category-based prompt
-        summary_prompt = (
-            f"Given a discussion thread on the topic of '{suggestion_type}' in data management, summarize the key points focusing on the main themes, "
-            "the relationship between key concepts, and how these are integrated into the overarching topic. Highlight any consensus or differing viewpoints on how to effectively manage or address these concepts. "
-            "Include considerations for additional attributes that should be integrated into the topic discussion, such as related integrations, volumes, and any specific methodologies or practices mentioned. "
-            "Provide a concise overview of the proposed solutions or structures mentioned and any suggestions for process improvements. Ensure the summary captures the evolution of the discussion, "
-            "from initial queries to the final consensus on their importance and integration into the topic. Comments are separated by ' # ' and ordered from earliest to latest, "
-            f"including the most recent user suggestion at the end: {updated_comments_text}")
-        try:
-            summary_response = llm(summary_prompt).strip()
-        except Exception as e:
-            summary_response = None
-            print(f"Failed to generate summary: {e}")
-
-        summary_text = summary_response.strip() if summary_response else "No summary available."
-
-        # Update the category summary in the database with the new summary
-        if summary_text != "No summary available.":
-            comments.update_category_summary(suggestion_type, summary_text)
-
         # Add the new user comment along with its category
         comments.add_user_comment(user_suggestion, suggestion_type)
         st.success("Thank you for your suggestion!")
-
-    # Fetch and display the summary from the database without LLM invocation
-    category_summary = ""
-    if suggestion_type != "All":
-        category_summary = comments.get_category_summary(suggestion_type)
-        if not category_summary:
-            # Fetch all comments for the category to summarize
-            all_suggestions = comments.get_user_comments_by_category(suggestion_type)
-            all_comments_text = " ".join([comment for comment, _, _ in all_suggestions])
-            if all_comments_text:
-                # Perform summarization with the updated comments text using a dynamic category-based prompt
-                summary_prompt = (
-                    f"Given a discussion thread on the topic of '{suggestion_type}' in data management, summarize the key points focusing on the main themes, "
-                    "the relationship between key concepts, and how these are integrated into the overarching topic. Highlight any consensus or differing viewpoints on how to effectively manage or address these concepts. "
-                    "Include considerations for additional attributes that should be integrated into the topic discussion, such as related integrations, volumes, and any specific methodologies or practices mentioned. "
-                    "Provide a concise overview of the proposed solutions or structures mentioned and any suggestions for process improvements. Ensure the summary captures the evolution of the discussion, "
-                    "from initial queries to the final consensus on their importance and integration into the topic. Comments are separated by ' # ' and ordered from earliest to latest, "
-                    f"including the most recent user suggestion at the end: {all_comments_text}")
-
-                try:
-                    summary_response = llm(summary_prompt).strip()
-                except Exception as e:
-                    summary_response = None
-                    print(f"Failed to generate summary: {e}")
-
-                summary_text = summary_response.strip() if summary_response.strip() else "No summary available."
-
-                # Update the table with the new summary
-                comments.update_category_summary(suggestion_type, summary_text)
-                category_summary = summary_text
-            else:
-                category_summary = "No comments provided for this category."
-        st.markdown(
-            f"""
-            <div style="margin-bottom: 20px;">
-                <h4 style="margin-bottom: 0;">Summary</h4>
-                <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px;">
-                    <pre style="white-space: pre-wrap;">{category_summary}</pre>
-                </div>
-            </div>
-            <hr style="margin: 20px 0;">
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown("**Summary is only available for individual categories.**")
 
     # Display all comments for the selected category
     all_suggestions = comments.get_user_comments_by_category(suggestion_type)
