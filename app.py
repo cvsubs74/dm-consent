@@ -238,39 +238,41 @@ def process_consent(data_elements_options):
 
         **Purposes:** At the heart of the Consent Integration process lies the Purpose. It serves as a transparent declaration to users, outlining the intent behind data collection. This clarity is crucial for obtaining informed consents, thereby instilling trust and ensuring compliance with data protection regulations. Within the Data Mapping framework, each Purpose is intricately linked to a Processing Activity, endowed with a property known as the Legal Basis. It is this Legal Basis that imbues the Processing Activity with regulatory legitimacy, directly stemming from the user's consent.
 
-        **Data Elements:** The Consent Integration process acknowledges the dynamic nature of data collection by allowing for the creation and selection of Data Elements. Whether originating from user inputs or derived from a predefined set of seeded data elements, these elements form the substantive content of consent. Upon selection, these Data Elements are published to Data Mapping, where they are meticulously mapped to the corresponding Processing Activity. This mapping is not arbitrary but is guided by the Purpose, ensuring that each data element's collection and processing are justified under the umbrella of the given consent.
+        **Data Elements:** The Consent Integration process acknowledges the dynamic nature of data collection by allowing for the creation and selection of Data Elements. These elements form the substantive content of consent. Upon selection, these Data Elements are now published to Data Mapping, where they are meticulously mapped to the corresponding Collection Point, ensuring a direct relationship between where the data is collected and the data itself.
 
-        This structured approach to Consent Integration not only facilitates the strategic alignment of data collection practices with regulatory mandates but also enhances the transparency and accountability of data processing activities. By explicitly linking Collection Points to Purposes and Data Elements to Processing Activities, the process ensures that every piece of user data is collected, processed, and managed with the utmost respect for user privacy and legal compliance.
-        """
+        This structured approach to Consent Integration enhances the transparency and accountability of data processing activities by explicitly linking Collection Points to Data Elements and Purposes to Processing Activities, ensuring every piece of user data is managed with the utmost respect for user privacy and legal compliance.
+    """
 
     st.markdown(consent_integration_text)
 
-    # UI to get purpose from the user
+    # UI to get inputs from the user
     collection_point = st.text_input("Enter the collection point for data collection:", key="collection_point")
     purpose = st.text_input("Enter the purpose for data collection:", key="purpose")
     selected_data_elements = st.multiselect("Select data elements:", data_elements_options, key="data_elements")
 
-    # Ensuring the "Processing Activities" key exists in session state for structured storage
-    if "processing_activities" not in st.session_state:
-        st.session_state["processing_activities"] = {}
+    if st.button("Integrate Consent", type="primary"):
+        if collection_point and purpose and selected_data_elements:
+            # Update Processing Activities
+            if "processing_activities" not in st.session_state:
+                st.session_state["processing_activities"] = {}
+            st.session_state["processing_activities"][purpose] = []
 
-    # Button to create data elements in Data Mapping (DM) and link to processing activity
-    if st.button("Create Purpose", type="primary"):
-        if purpose and selected_data_elements:
-            # Check if the purpose already exists
-            if purpose in st.session_state["processing_activities"]:
-                # Append new data elements to the existing list, avoiding duplicates
-                current_elements = st.session_state["processing_activities"][purpose]
-                updated_elements = list(set(current_elements + selected_data_elements))
-                st.session_state["processing_activities"][purpose] = updated_elements
-            else:
-                # If the purpose doesn't exist, create a new entry
-                st.session_state["processing_activities"][purpose] = selected_data_elements
+            # Update Assets
+            if "assets" not in st.session_state:
+                st.session_state["assets"] = {}
+            st.session_state["assets"][collection_point] = selected_data_elements
 
-            # Display the updated "Processing Activities" to the user
+            # Update Links
+            if "links" not in st.session_state:
+                st.session_state["links"] = []
+            # Don't duplicate
+            if (purpose, collection_point) not in st.session_state.get("links", []):
+                st.session_state["links"].append((purpose, collection_point))
+
+            st.success("Consent integration has been successfully processed.")
             visualize_data_map()
         else:
-            st.error("Please specify a purpose and select at least one data element.")
+            st.error("Please fill in all fields to integrate consent.")
 
 
 def process_model_creation():
@@ -294,85 +296,76 @@ def process_model_creation():
 
     # Handling the case where "Add new processing activity" is selected
     if model_purpose == "Add new processing activity":
-        new_activity_name = st.text_input("Enter new processing activity name:", key="new_activity_name")
+        model_purpose = st.text_input("Enter new processing activity name:", key="new_activity_name")
 
         # Button to create a new processing activity
         if st.button("Create New Processing Activity", key="create_new_pa"):
-            if new_activity_name and new_activity_name not in existing_activities:
-                # Ensure "processing_activities" is initialized in session state
-                if "processing_activities" not in st.session_state:
-                    st.session_state["processing_activities"] = {}
-                # Add the new processing activity
-                st.session_state["processing_activities"][new_activity_name] = []
-                st.success(f"Processing activity '{new_activity_name}' has been created successfully.")
-                # Resetting model purpose to newly created activity for smoother UX
-                st.session_state["model_purpose"] = new_activity_name
-            else:
-                st.error("Please enter a unique name for the new processing activity.")
+            # Ensure "processing_activities" is initialized in session state
+            if "processing_activities" not in st.session_state:
+                st.session_state["processing_activities"] = {}
+            # Add the new processing activity
+            if model_purpose not in st.session_state["processing_activities"]:
+                st.session_state["processing_activities"][model_purpose] = []
+            st.success(f"Processing activity '{model_purpose}' has been created successfully.")
+    else:
+        if "processing_activities" not in st.session_state:
+            st.session_state["processing_activities"] = {}
+        # Add the new processing activity
+        st.session_state["processing_activities"][model_purpose] = []
 
-    if model_purpose not in ["Select a processing activity...", "Add new processing activity"] and st.button("Create Model", type="primary"):
+    if model_purpose not in ["Select a processing activity...", "Add new processing activity"] and st.button(
+            "Create Model", type="primary"):
         if model_name and model_description:
-            # Ensure "models" is initialized in session state
+            # Initialize "models" if not already in session state
             if "models" not in st.session_state:
                 st.session_state["models"] = {}
-
-            # Create and add the new model object
+            # Add the new model
             st.session_state["models"][model_name] = {"description": model_description, "purpose": model_purpose}
 
-            st.success(f"Model '{model_name}' has been created successfully and linked to the processing activity '{model_purpose}'.")
-            visualize_data_map()
+            # Use "links" to record both asset-collection point and model-processing activity relationships
+            if "links" not in st.session_state:
+                st.session_state["links"] = []
+            # Record the model-processing activity link
+            if (model_purpose, model_name) not in st.session_state.get("links", []):
+                st.session_state["links"].append((model_purpose, model_name))
+
+            st.success(
+                f"Model '{model_name}' has been created successfully and linked to the processing activity '{model_purpose}'.")
         else:
             st.error("Please fill in all fields to create a model.")
+
+    visualize_data_map()
 
 
 def visualize_data_map():
     dot = Digraph(comment='Data Map Visualization')
 
     # Main nodes
-    dot.node('A', 'Data Map')
-    dot.node('B', 'Processing Activities')
-    dot.node('C', 'Assets')
+    dot.node('Data Map', 'Data Map')
+    dot.node('Processing Activities', 'Processing Activities')
+    dot.node('Assets', 'Assets')
 
     # Connect main nodes to Data Map
-    dot.edge('A', 'B')
-    dot.edge('A', 'C')
+    dot.edge('Data Map', 'Processing Activities')
+    dot.edge('Data Map', 'Assets')
 
-    # Assuming session_state['processing_activities'] and session_state['assets'] have been populated
-    # Iterate over processing activities
-    for activity, elements in st.session_state.get("processing_activities", {}).items():
-        activity_node = activity
+    # Visualize Processing Activities
+    for activity in st.session_state.get("processing_activities", {}).keys():
         dot.node(activity, activity)
-        dot.edge('B', activity_node)  # Link activity to Processing Activities node
+        dot.edge('Processing Activities', activity)
 
-        # Iterate over elements (if any) within each processing activity
-        for element in elements:
-            element_node = f'{activity_node}_{element.replace(" ", "_")}'
-            dot.node(element_node, element)
-            dot.edge(activity_node, element_node)
-
-    # Iterate over data discovery assets
+    # Visualize Assets and Data Elements
     for asset, elements in st.session_state.get("assets", {}).items():
-        asset_node = f'DD_{asset.replace(" ", "_")}'
-        dot.node(asset_node, asset)
-        dot.edge('C', asset_node)  # Link assets to Assets node
-
-        # Iterate over elements within each asset
+        dot.node(asset, asset)
+        dot.edge('Assets', asset)
         for element in elements:
-            element_node = f'{asset_node}_{element.replace(" ", "_")}'
+            element_node = f'{asset}_{element}'
             dot.node(element_node, element)
-            dot.edge(asset_node, element_node)
+            dot.edge(asset, element_node)
 
-    # Check if there are any models to display
-    if "models" in st.session_state and st.session_state["models"]:
-        for model_name, model_info in st.session_state["models"].items():
-            model_node = f'Model_{model_name.replace(" ", "_")}'
-            # Create model nodes with description as tooltip
-            dot.node(model_node, label=model_name, _attributes={"tooltip": model_info["description"]})
-
-            # Link model directly to its processing activity, not under a separate "Models" node
-            pa_node = model_info["purpose"]
-            dot.edge(pa_node, model_node, label="Uses Model")  # Label the edge for clarity
-            dot.edge("B", pa_node)
+    # Utilize "links" session variable for connecting nodes directly
+    for source, target in st.session_state.get("links", []):
+        dot.edge(source, target, label="")
 
     # Display the graph
     st.graphviz_chart(dot.source)
