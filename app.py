@@ -307,7 +307,7 @@ def process_model_creation():
             if model_purpose not in st.session_state["processing_activities"]:
                 st.session_state["processing_activities"][model_purpose] = []
             st.success(f"Processing activity '{model_purpose}' has been created successfully.")
-    else:
+    elif model_purpose != "Select a processing activity...":
         if "processing_activities" not in st.session_state:
             st.session_state["processing_activities"] = {}
         # Add the new processing activity
@@ -334,7 +334,7 @@ def process_model_creation():
         else:
             st.error("Please fill in all fields to create a model.")
 
-    visualize_data_map()
+        visualize_data_map()
 
 
 def visualize_data_map():
