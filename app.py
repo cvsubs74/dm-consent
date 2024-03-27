@@ -411,15 +411,19 @@ def visualize_data_map():
     dot.attr('node', fontsize='12', fontname='Helvetica bold')  # Specifying a bold font
 
     # Node attribute configurations for different categories
-    processing_activities_attrs = {'style': 'filled', 'color': 'lightblue'}
-    assets_attrs = {'style': 'filled', 'color': 'salmon'}
+    processing_activities_attrs = {'style': 'filled', 'color': '#1BB3F0'}
+    assets_attrs = {'style': 'filled', 'color': 'orange'}
     models_attrs = {'style': 'filled', 'color': 'yellow'}
-    vendors_attrs = {'style': 'filled', 'color': 'orange'}
-    element_attrs = {'style': 'filled', 'color': 'grey'}
+    vendors_attrs = {'style': 'filled', 'color': '#CD9F4A'}
+    element_attrs = {'style': 'filled', 'color': '#CCF01B'}
+
+    # Creating the root node
+    dot.node('Data Map', '<<b>Data Map</b>>', shape='folder', style='filled', color='lightgrey')
 
     # Visualize Processing Activities with specific attributes
     for activity, elements in st.session_state.get("processing_activities", {}).items():
         dot.node(activity, f"<<b>{activity}</b>>", **processing_activities_attrs)
+        dot.edge('Data Map', activity)
         for element in elements:
             element_node = f'{activity}_{element}'
             dot.node(element_node, f"<<b>{element}</b>>", **element_attrs)
@@ -428,6 +432,7 @@ def visualize_data_map():
     # Visualize Assets and Data Elements with specific attributes
     for asset, elements in st.session_state.get("assets", {}).items():
         dot.node(asset, f"<<b>{asset}</b>>", **assets_attrs)
+        dot.edge('Data Map', asset)
         for element in elements:
             element_node = f'{asset}_{element}'
             dot.node(element_node, f"<<b>{element}</b>>", **element_attrs)
@@ -447,11 +452,11 @@ def visualize_data_map():
 
     # Define colors for different categories (for legend)
     colors = {
-        'Processing Activities': 'lightblue',
-        'Assets': 'salmon',
+        'Processing Activities': '#1BB3F0',
+        'Assets': 'orange',
         'Models': 'yellow',
-        'Vendors': 'orange',
-        'Data Elements': 'grey',
+        'Vendors': '#CD9F4A',
+        'Data Elements': '#CCF01B',
     }
 
     # Constructing the legend HTML with left-aligned text
@@ -470,8 +475,6 @@ def visualize_data_map():
 
     # Display the graph
     st.graphviz_chart(dot.source)
-
-
 
 
 if __name__ == "__main__":
