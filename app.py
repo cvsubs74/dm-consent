@@ -1,3 +1,5 @@
+import random
+
 import streamlit as st
 import os
 from graphviz import Digraph
@@ -120,17 +122,37 @@ def process_cookies():
     st.header("Cookies Data Mapping Integration")
     st.markdown("""
         **Cookies Data Mapping Integration:** This integration enhances user privacy and data governance by mapping cookies to assets within the Data Map. It allows for precise control over cookie data, aligning with user consent and regulatory requirements. By scanning website domains for cookies and categorizing them accurately in the Data Map, we ensure transparency and compliance in how cookie data is handled.
-        """)
+    """)
     website_domain = st.text_input("Enter the website domain to scan for cookies:", key="website_domain")
 
     if st.button("Scan Cookies", type="primary"):
         if website_domain:
             # Check if the website domain already exists as an asset in Data Mapping
-            if website_domain not in st.session_state["assets"]:
+            if website_domain not in st.session_state.get("assets", {}):
                 # If the website domain doesn't exist, create a new entry
                 st.session_state["assets"][website_domain] = []
 
-            st.success(f"Cookies scanned and added for {website_domain}.")
+            # Randomly pick a list of vendors from the given options
+            vendors_list = ["Microsoft", "Google", "Meta", "Salesforce"]
+            selected_vendors = random.sample(vendors_list, random.randint(1, len(vendors_list)))
+
+            # Ensure "vendors" and "links" session variables are initialized
+            if "vendors" not in st.session_state:
+                st.session_state["vendors"] = []
+            if "links" not in st.session_state:
+                st.session_state["links"] = []
+
+            # Add selected vendors to the session and create links
+            for vendor in selected_vendors:
+                if vendor not in st.session_state["vendors"]:
+                    st.session_state["vendors"].append(vendor)
+                # Create a link between the asset (website domain) and the vendor
+                if (website_domain, vendor) not in st.session_state["links"]:
+                    st.session_state["links"].append((website_domain, vendor))
+
+            # Display the vendors found as part of the scanning result
+            vendors_found = ", ".join(selected_vendors)
+            st.success(f"Cookies scanned and added for {website_domain}. Vendors found: {vendors_found}.")
             visualize_data_map()
         else:
             st.error("Please enter a website domain.")
@@ -338,37 +360,73 @@ def process_model_creation():
 
 
 def visualize_data_map():
-    dot = Digraph(comment='Data Map Visualization')
+    dot = Digraph(comment='Data Map Visualization', format='svg')  # Use SVG for better text rendering
 
-    # Main nodes
-    dot.node('Data Map', 'Data Map')
-    dot.node('Processing Activities', 'Processing Activities')
-    dot.node('Assets', 'Assets')
+    # Adjusting the default font size and name for all nodes
+    dot.attr('node', fontsize='12', fontname='Helvetica bold')  # Specifying a bold font
 
-    # Connect main nodes to Data Map
-    dot.edge('Data Map', 'Processing Activities')
-    dot.edge('Data Map', 'Assets')
+    # Node attribute configurations for different categories
+    processing_activities_attrs = {'style': 'filled', 'color': 'lightblue'}
+    assets_attrs = {'style': 'filled', 'color': 'salmon'}
+    models_attrs = {'style': 'filled', 'color': 'yellow'}
+    vendors_attrs = {'style': 'filled', 'color': 'orange'}
+    element_attrs = {'style': 'filled', 'color': 'grey'}
 
-    # Visualize Processing Activities
-    for activity in st.session_state.get("processing_activities", {}).keys():
-        dot.node(activity, activity)
-        dot.edge('Processing Activities', activity)
+    # Visualize Processing Activities with specific attributes
+    for activity, elements in st.session_state.get("processing_activities", {}).items():
+        dot.node(activity, f"<<b>{activity}</b>>", **processing_activities_attrs)
+        for element in elements:
+            element_node = f'{activity}_{element}'
+            dot.node(element_node, f"<<b>{element}</b>>", **element_attrs)
+            dot.edge(activity, element_node)
 
-    # Visualize Assets and Data Elements
+    # Visualize Assets and Data Elements with specific attributes
     for asset, elements in st.session_state.get("assets", {}).items():
-        dot.node(asset, asset)
-        dot.edge('Assets', asset)
+        dot.node(asset, f"<<b>{asset}</b>>", **assets_attrs)
         for element in elements:
             element_node = f'{asset}_{element}'
-            dot.node(element_node, element)
+            dot.node(element_node, f"<<b>{element}</b>>", **element_attrs)
             dot.edge(asset, element_node)
+
+    # If "models" are maintained separately, visualize them
+    for model, details in st.session_state.get("models", {}).items():
+        dot.node(model, f"<<b>{model}</b>>", **models_attrs)
+
+    # If "vendors" are maintained separately, visualize them
+    for vendor in st.session_state.get("vendors", []):
+        dot.node(vendor, f"<<b>{vendor}</b>>", **vendors_attrs)
 
     # Utilize "links" session variable for connecting nodes directly
     for source, target in st.session_state.get("links", []):
-        dot.edge(source, target, label="")
+        dot.edge(source, target)
+
+    # Define colors for different categories (for legend)
+    colors = {
+        'Processing Activities': 'lightblue',
+        'Assets': 'salmon',
+        'Models': 'yellow',
+        'Vendors': 'orange',
+        'Data Elements': 'grey',
+    }
+
+    # Constructing the legend HTML with left-aligned text
+    legend_html = '''<<table border="0" cellborder="0" cellspacing="2" cellpadding="2" style="margin-left:auto; margin-right:0;">'''
+    legend_html += '''<tr><td colspan="2" align="left"><b>Legend</b></td></tr>'''  # Ensure the 'Legend' title aligns left
+
+    for label, color in colors.items():
+        legend_html += f'''<tr>
+                             <td width="20" height="20" bgcolor="{color}">&nbsp;</td>
+                             <td align="left">{label}</td>  # Align text to the left
+                           </tr>'''
+    legend_html += '</table>>'
+
+    # Add the legend node to the graph with 'plaintext' shape for no surrounding shape
+    dot.node('legend', legend_html, shape='plaintext')
 
     # Display the graph
     st.graphviz_chart(dot.source)
+
+
 
 
 if __name__ == "__main__":
