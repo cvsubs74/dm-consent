@@ -77,6 +77,9 @@ def main():
     # Process models
     process_model_creation()
 
+    # Process vendor engagements
+    process_vendor_engagements()
+
     # Process comments
     process_comments()
 
@@ -156,6 +159,48 @@ def process_cookies():
             visualize_data_map()
         else:
             st.error("Please enter a website domain.")
+
+
+def process_vendor_engagements():
+    st.header("Vendor Engagements")
+
+    # Using the rewritten description for Vendor Engagements
+    st.markdown("""
+    **Vendor Engagements for Comprehensive Risk Management:**
+    Vendor risk management is an essential element of any privacy strategy. The OneTrust platform enhances this by offering capabilities to import vendors and assess their risks. With the growing need for oversight over third, fourth, and fifth-party vendors, managing these complex relationships becomes more challenging. OneTrust simplifies this by allowing these multi-tier vendor engagements to be grouped under a single framework, enabling consistent risk management across all vendor levels.
+    """)
+
+    # UI to capture engagement name and select third-party vendors, ensuring no duplicates
+    engagement_name = st.text_input("Enter Engagement Name:", key="engagement_name")
+    predefined_vendors = ["Microsoft", "Google", "Meta", "Salesforce"]
+    session_vendors = st.session_state.get("vendors", [])
+    available_vendors = sorted(set(predefined_vendors + session_vendors))
+
+    third_party_vendors = st.multiselect("Select Third-Party Vendors:", available_vendors, key="third_party_vendors")
+
+    if st.button("Create Engagement", type="primary"):
+        if engagement_name and third_party_vendors:
+            # Represent the engagement as a processing activity
+            if "processing_activities" not in st.session_state:
+                st.session_state["processing_activities"] = {}
+            st.session_state["processing_activities"][engagement_name] = []
+
+            # Link the third-party vendors to the processing activity
+            if "links" not in st.session_state:
+                st.session_state["links"] = []
+            for vendor in third_party_vendors:
+                if (engagement_name, vendor) not in st.session_state["links"]:
+                    st.session_state["links"].append((engagement_name, vendor))
+
+                if vendor not in st.session_state.get("vendors", []):
+                    if "vendors" not in st.session_state:
+                        st.session_state["vendors"] = []
+                    st.session_state["vendors"].append(vendor)
+
+            visualize_data_map()
+
+            st.success(
+                f"Engagement '{engagement_name}' with vendors {', '.join(third_party_vendors)} has been successfully added to the Data Map.")
 
 
 def process_dd(data_elements_options):
