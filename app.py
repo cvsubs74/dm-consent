@@ -80,8 +80,108 @@ def main():
     # Process vendor engagements
     process_vendor_engagements()
 
+    process_purposes()
+
     # Process comments
     process_comments()
+
+
+def process_purposes():
+    st.header("Purposes as First Class Citizens")
+
+    # Introduction to Purposes
+    introduction_to_purposes = """
+        **Introduction to Purposes**
+
+        There are three fundamental questions that a privacy governance platform should be able to answer:
+
+        1. What data do I have? This pertains to privacy. An enterprise typically has data stored across hundreds of systems, used in various ways. For the data governance persona, the initial step is to understand all the data the enterprise possesses.
+
+        2. Why do I have the data? Understanding the purpose is crucial. Enterprises collect data for specific purposes, and these must be identified and documented. This is vital for ensuring that enterprises have the necessary user consents, as they may otherwise unknowingly violate regulatory compliance.
+
+        3. What are my responsibilities with this data? Enterprises must understand their obligations regarding user data, including compliance with regulations such as data masking and deletion based on retention policies.
+
+        The platform provides tools such as multimodal data discovery methods, including assessments, imports, data mapping, and data discovery, to answer the first question, This pertains to privacy, as an enterprise typically has data stored across hundreds of systems, used in various ways. For the data governance persona, the initial step is to understand all the data the enterprise possesses.
+
+        The platform also offers the consent platform to capture consents from users, addressing the second question. However, it falls short in connecting this with the data we discover. This crucial aspect is addressed in the following sections.
+
+        Finally our platform continues to address the third question by providing tools to handle data responsibly. We help enterprises understand their obligations when handling customer data, flag risks, and recommend controls, with GRC playing a significant role.
+        """
+
+    # Purpose Management Overview
+    purpose_management_overview = """
+        **Purpose Management Overview**
+
+        Purpose management is a critical aspect of our privacy tech platform, providing the foundation for linking data to specific use cases or intentions. This functionality enables enterprises to manage and track the reasons for which personal data is processed, ensuring compliance with privacy regulations and enhancing data governance practices.
+        """
+
+    # Linking Purposes to Data
+    linking_purposes_to_data = """
+        **Linking Purposes to Data**
+
+        This functionality allows data stewards to select objects from the catalog and link them to one or more purposes. By linking purposes to data, enterprises can ensure that data processing activities are aligned with the intended use cases and purposes specified in their privacy policies. The process of linking identified data to purposes shows a central list of purposes maintained on the consent platform, ensuring consistency and accuracy.
+        """
+
+    # Surfacing Purposes from Central List
+    surfacing_purposes = """
+        **Surfacing Purposes from Central List**
+
+        Purposes are maintained centrally on the consent platform. When linking identified data to purposes, users can select from a central list of purposes, ensuring consistency and accuracy across the platform.
+        """
+
+    # Adding New Purposes
+    adding_new_purposes = """
+        **Adding New Purposes**
+
+        Enterprises often need to add new purposes dynamically to reflect changes in data processing activities or to comply with new regulatory requirements. This functionality enables users to add new purposes on the fly, ensuring that the platform remains flexible and adaptable to evolving privacy needs. The purpose discovery process automatically updates the central purpose repository, unifying all purposes in the platform.
+        """
+
+    # Launching Purpose Discovery Assessments
+    launching_purpose_discovery = """
+        **Launching Purpose Discovery Assessments**
+
+        Purpose discovery assessments are crucial for capturing purposes from different teams and departments within an organization. This functionality streamlines the process of gathering purpose information, ensuring that all relevant stakeholders are involved in defining and documenting data processing purposes.
+        """
+
+    # Updating Asset Discovery Templates
+    updating_asset_discovery_templates = """
+        **Updating Asset Discovery Templates**
+
+        Asset discovery templates need to be updated to capture purposes associated with data elements. This functionality ensures that purposes are included in the data discovery process, providing visibility into how data is being used and for what purposes.
+        """
+
+    # Backpropagating Newly Discovered Purposes to Consent Module
+    backpropagating_new_purposes = """
+        **Backpropagating Newly Discovered Purposes to Consent Module**
+
+        This functionality enables the persona to create new collection points to gather consents for newly discovered purposes. By backpropagating purposes to the consent module, enterprises can ensure that all data processing activities have appropriate consents in place.
+        """
+
+    # Updating Data Map with Purposes
+    updating_data_map_with_purposes = """
+        **Updating Data Map with Purposes**
+
+        The data map is updated with purposes linked to data elements, along with granular stats on how many users have consented to these purposes and how many haven't. This provides a comprehensive view of data usage and consent status across the organization.
+        """
+
+    # Building Tooling to Surface Data Subject Level Consent Data
+    building_tooling_to_surface_consent_data = """
+        **Building Tooling to Surface Data Subject Level Consent Data**
+
+        Tooling is built to surface data subject level consent data based on identified purposes. This data is then sent back to third party systems or teams to ensure that they are using only data for which they have user consent, thus ensuring compliance with privacy regulations.
+        """
+
+    # Displaying the purpose management overview and functionalities
+    st.markdown(introduction_to_purposes)
+    st.markdown(purpose_management_overview)
+    st.markdown(linking_purposes_to_data)
+    st.markdown(surfacing_purposes)
+    st.markdown(adding_new_purposes)
+    st.markdown(launching_purpose_discovery)
+    st.markdown(updating_asset_discovery_templates)
+    st.markdown(backpropagating_new_purposes)
+    st.markdown(updating_data_map_with_purposes)
+    st.markdown(building_tooling_to_surface_consent_data)
 
 
 def process_comments():
